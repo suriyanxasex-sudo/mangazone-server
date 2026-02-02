@@ -1,0 +1,19 @@
+services:
+  - type: web
+    name: mangazone-api
+    env: node
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      - key: MONGO_URI
+        value: mongodb+srv://suriyanxasex_db_user:manga1234@manga.edyvuzt.mongodb.net/mangaApp?retryWrites=true&w=majority&appName=Manga
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000
+    healthCheckPath: /api/health
+    autoDeploy: true
+    disk:
+      name: data
+      mountPath: /data
+      sizeGB: 1
