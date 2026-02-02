@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { api } from './utils';
 
-// Import ส่วนประกอบต่างๆ
+// Import ทุกคอมโพเนนต์ที่เราเคยทำ
 import AuthScreen from './components/AuthScreen';
 import Navbar from './components/Navbar';
 import MangaDisplay from './components/MangaDisplay';
@@ -14,23 +15,20 @@ const App = () => {
   const [user, setUser] = useState(null);
   const [showProfile, setShowProfile] = useState(false);
   const [showPayment, setShowPayment] = useState(false);
-  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // เช็คว่าเคยล็อกอินค้างไว้ไหม
     const savedUser = localStorage.getItem('user');
     if (savedUser) {
-      setUser(JSON.parse(savedUser));
+      let userData = JSON.parse(savedUser);
+      // 🔥 ฟีเจอร์ Force Admin สำหรับ Joshua
+      if (userData.username === 'joshua') {
+        userData.isAdmin = true;
+      }
+      setUser(userData);
     }
-    setLoading(false);
   }, []);
 
-  if (loading) return <div className="bg-black min-h-screen text-white flex items-center justify-center">Loading...</div>;
-
-  // ถ้ายังไม่ล็อกอิน ให้โชว์หน้า Auth (Login/Register)
-  if (!user) {
-    return <AuthScreen setUser={setUser} />;
-  }
+  if (!user) return <AuthScreen setUser={setUser} />;
 
   return (
     <Router>
@@ -38,21 +36,19 @@ const App = () => {
         <Navbar 
           user={user} 
           setUser={setUser} 
-          onOpenProfile={() => setShowProfile(true)}
-          onOpenVIP={() => setShowPayment(true)}
+          onOpenProfile={() => setShowProfile(true)} 
+          onOpenVIP={() => setShowPayment(true)} 
         />
-
         <Routes>
           <Route path="/" element={<MangaDisplay user={user} />} />
           <Route path="/reader/:mangaId/:chapterId" element={<Reader user={user} />} />
+          {/* หน้าแอดมินจะเข้าได้เฉพาะ joshua เท่านั้น */}
           <Route path="/admin" element={user.isAdmin ? <AdminDashboard user={user} /> : <Navigate to="/" />} />
         </Routes>
-
         {showProfile && <ProfileModal user={user} setUser={setUser} onClose={() => setShowProfile(false)} />}
         {showPayment && <PaymentModal user={user} setUser={setUser} onClose={() => setShowPayment(false)} />}
       </div>
     </Router>
   );
 };
-
 export default App;
