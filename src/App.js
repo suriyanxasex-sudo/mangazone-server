@@ -1,74 +1,47 @@
-import React, { useState, useEffect, Suspense } from 'react';
+import React, { useState, Suspense, lazy } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { AuthProvider, useAuth } from './AuthContext';
+import { ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
-// Import Components
-import AuthScreen from './components/AuthScreen';
+// Components
 import Navbar from './components/Navbar';
-import MangaDisplay from './components/MangaDisplay';
-import Reader from './components/Reader';
-import AdminDashboard from './components/AdminDashboard';
-import ProfileModal from './components/ProfileModal';
-import PaymentModal from './components/PaymentModal';
+const AuthScreen = lazy(() => import('./components/AuthScreen'));
+const MangaDisplay = lazy(() => import('./components/MangaDisplay'));
+const MangaDetail = lazy(() => import('./components/MangaDetail'));
+const Reader = lazy(() => import('./components/Reader'));
+const AdminDashboard = lazy(() => import('./components/AdminDashboard'));
 
-const App = () => {
-  const [user, setUser] = useState(null);
+const AppContent = () => {
+  const { user, loading, logout } = useAuth();
   const [showProfile, setShowProfile] = useState(false);
-  const [showPayment, setShowPayment] = useState(false);
-  const [isInitializing, setIsInitializing] = useState(true);
 
-  useEffect(() => {
-    // โหลดข้อมูล User และเช็คสถานะพิเศษของ Joshua
-    const savedUser = localStorage.getItem('user');
-    if (savedUser) {
-      try {
-        let userData = JSON.parse(savedUser);
-        if (userData.username.toLowerCase() === 'joshua') {
-          userData.isAdmin = true; // Force Admin สิทธิ์พิเศษของคุณ
-        }
-        setUser(userData);
-      } catch (e) {
-        localStorage.removeItem('user');
-      }
-    }
-    setIsInitializing(false);
-  }, []);
-
-  if (isInitializing) return (
-    <div className="bg-black min-h-screen flex flex-col items-center justify-center">
-      <div className="w-16 h-16 border-4 border-green-500 border-t-transparent rounded-full animate-spin"></div>
-      <p className="mt-4 text-green-500 font-bold tracking-widest">MANGZONE INITIALIZING...</p>
-    </div>
-  );
-
-  // ถ้ายังไม่ล็อกอิน ให้ไปหน้า Login ดีไซน์สวยๆ
-  if (!user) return <AuthScreen setUser={setUser} />;
+  if (loading) return <div className="min-h-screen bg-black flex items-center justify-center text-green-500 font-bold animate-pulse">MANGAZONE LOADING...</div>;
 
   return (
-    <Router>
-      <div className="bg-black min-h-screen text-white font-sans selection:bg-green-500/40">
-        <Navbar 
-          user={user} 
-          setUser={setUser} 
-          onOpenProfile={() => setShowProfile(true)} 
-          onOpenVIP={() => setShowPayment(true)} 
-        />
-        
-        <Suspense fallback={<div className="p-10 text-center">Loading Content...</div>}>
+    <div className="bg-black min-h-screen text-white">
+      <ToastContainer theme="dark" position="bottom-right" />
+      {user && <Navbar user={user} onLogout={logout} onOpenProfile={() => setShowProfile(true)} />}
+      
+      <main className="container mx-auto px-4">
+        <Suspense fallback={<div className="p-20 text-center text-gray-500">กำลังโหลดเนื้อหา...</div>}>
           <Routes>
-            <Route path="/" element={<MangaDisplay user={user} />} />
-            <Route path="/reader/:mangaId/:chapterId" element={<Reader user={user} />} />
-            {/* ระบบป้องกันหน้า Admin: ต้องเป็น joshua เท่านั้น */}
-            <Route path="/admin" element={user.isAdmin ? <AdminDashboard /> : <Navigate to="/" />} />
-            <Route path="*" element={<Navigate to="/" />} />
+            <Route path="/login" element={!user ? <AuthScreen /> : <Navigate to="/" />} />
+            <Route path="/" element={user ? <MangaDisplay /> : <Navigate to="/login" />} />
+            <Route path="/manga/:id" element={user ? <MangaDetail /> : <Navigate to="/login" />} />
+            <Route path="/reader/:mangaId/:chapterId/:chapterNum" element={user ? <Reader user={user} /> : <Navigate to="/login" />} />
+            <Route path="/admin" element={user?.isAdmin ? <AdminDashboard /> : <Navigate to="/" />} />
           </Routes>
         </Suspense>
-
-        {/* Modals ต่างๆ ที่เราทำมากัน */}
-        {showProfile && <ProfileModal user={user} setUser={setUser} onClose={() => setShowProfile(false)} />}
-        {showPayment && <PaymentModal user={user} setUser={setUser} onClose={() => setShowPayment(false)} />}
-      </div>
-    </Router>
+      </main>
+    </div>
   );
 };
+
+const App = () => (
+  <AuthProvider>
+    <Router><AppContent /></Router>
+  </AuthProvider>
+);
 
 export default App;
