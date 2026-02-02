@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { api } from './utils';
 
-// Import ทุกคอมโพเนนต์ที่เราเคยทำ
+// ตรวจสอบชื่อไฟล์ให้ตรงกับในเครื่องคุณเป๊ะๆ
 import AuthScreen from './components/AuthScreen';
 import Navbar from './components/Navbar';
 import MangaDisplay from './components/MangaDisplay';
@@ -20,10 +19,8 @@ const App = () => {
     const savedUser = localStorage.getItem('user');
     if (savedUser) {
       let userData = JSON.parse(savedUser);
-      // 🔥 ฟีเจอร์ Force Admin สำหรับ Joshua
-      if (userData.username === 'joshua') {
-        userData.isAdmin = true;
-      }
+      // 🔥 ระบบ Force Admin ให้ Joshua
+      if (userData.username === 'joshua') userData.isAdmin = true;
       setUser(userData);
     }
   }, []);
@@ -39,12 +36,14 @@ const App = () => {
           onOpenProfile={() => setShowProfile(true)} 
           onOpenVIP={() => setShowPayment(true)} 
         />
-        <Routes>
-          <Route path="/" element={<MangaDisplay user={user} />} />
-          <Route path="/reader/:mangaId/:chapterId" element={<Reader user={user} />} />
-          {/* หน้าแอดมินจะเข้าได้เฉพาะ joshua เท่านั้น */}
-          <Route path="/admin" element={user.isAdmin ? <AdminDashboard user={user} /> : <Navigate to="/" />} />
-        </Routes>
+        <div className="pt-4">
+          <Routes>
+            <Route path="/" element={<MangaDisplay user={user} />} />
+            <Route path="/reader/:mangaId/:chapterId" element={<Reader user={user} />} />
+            <Route path="/admin" element={user.isAdmin ? <AdminDashboard /> : <Navigate to="/" />} />
+          </Routes>
+        </div>
+
         {showProfile && <ProfileModal user={user} setUser={setUser} onClose={() => setShowProfile(false)} />}
         {showPayment && <PaymentModal user={user} setUser={setUser} onClose={() => setShowPayment(false)} />}
       </div>
